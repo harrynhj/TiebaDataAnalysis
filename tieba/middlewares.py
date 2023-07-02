@@ -7,7 +7,6 @@ import sqlite3
 from . import datatier
 import random
 from scrapy import signals
-from fake_useragent import UserAgent
 from scrapy.http import HtmlResponse
 from w3lib.http import basic_auth_header
 from scrapy.dupefilters import BaseDupeFilter

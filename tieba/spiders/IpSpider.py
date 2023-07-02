@@ -1,6 +1,5 @@
 import scrapy
 from tieba.items import ProxyItem
-import scrapy_playwright
 
 
 class IpspiderSpider(scrapy.Spider):

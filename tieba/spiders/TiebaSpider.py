@@ -3,7 +3,7 @@ import scrapy
 from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem, UserItem
 from urllib.parse import urlparse, parse_qs
 from . import helper
-import scrapy_playwright
+
 
 
 
