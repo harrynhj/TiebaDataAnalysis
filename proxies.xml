@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<proxies>
+    <proxy>
+        <ip>192.168.1.1</ip>
+        <port>8080</port>
+        <username>user1</username>
+        <password>pass1</password>
+        <type>http</type>
+    </proxy>
+    <proxy>
+        <ip>192.168.1.2</ip>
+        <port>8080</port>
+        <username>user2</username>
+        <password>pass2</password>
+        <type>https</type>
+    </proxy>
+    <proxy>
+        <ip>192.168.1.3</ip>
+        <port>8080</port>
+        <type>http</type>
+    </proxy>
+
+</proxies>
