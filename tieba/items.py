@@ -35,10 +35,10 @@ class PostItem(scrapy.Item):
     author_level = scrapy.Field()
     author_ip = scrapy.Field()
     author_device = scrapy.Field()
-    time = scrapy.Field()
+    date = scrapy.Field()
     content = scrapy.Field()
     floor = scrapy.Field()
-    has_reply = scrapy.Field()
+    reply_num = scrapy.Field()
     thread_id = scrapy.Field()
 
 

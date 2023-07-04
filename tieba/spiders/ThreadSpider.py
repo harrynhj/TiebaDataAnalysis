@@ -23,8 +23,8 @@ class ThreadspiderSpider(scrapy.Spider):
         sql = 'SELECT * FROM Emoji'
         self.emoji_table = tieba.datatier.select_n_rows(self.dbConn, sql)
         self.url += self.tieba_name + '&pn='
-        # yield scrapy.Request(url=self.url+str(self.current_page), callback=self.parse)
-        yield scrapy.Request(url='https://tieba.baidu.com/p/8414238582', callback=self.thread_parse)
+        yield scrapy.Request(url=self.url+str(self.current_page), callback=self.parse)
+        # yield scrapy.Request(url='https://tieba.baidu.com/p/8414238582', callback=self.thread_parse)
 
     def parse(self, response):
         for t in response.xpath('//li[contains(@class, "j_thread_list")]'):
@@ -46,19 +46,19 @@ class ThreadspiderSpider(scrapy.Spider):
         pass
 
     def thread_parse(self, response):
-        # item = response.meta['item']
-        # thread_id = response.meta['thread_id']
-        # first_floor = response.xpath('//div[contains(@class, "l_post ")]')
-        # data = json.loads(first_floor.xpath('@data-field').extract_first())
-        # date = response.xpath('.//span[@class="tail-info"][last()]/text()').extract_first()
-        # if date is None:
-        #     item['post_time'] = data['content']['date']
-        # else:
-        #     item['post_time'] = date
-        # item['post_num'] = int(response.xpath('//span[@class="red"]/text()')[0].get())
-        # item['page_num'] = int(response.xpath('//span[@class="red"]/text()')[1].get())
-        # item['sub_name'] = response.xpath('//a[@class="card_title_fname"]/text()').extract_first().strip()[:-1]
-        # yield item
+        item = response.meta['item']
+        thread_id = response.meta['item']['thread_id']
+        first_floor = response.xpath('//div[contains(@class, "l_post ")]')
+        data = json.loads(first_floor.xpath('@data-field').extract_first())
+        date = response.xpath('.//span[@class="tail-info"][last()]/text()').extract_first()
+        if date is None:
+            item['post_time'] = data['content']['date']
+        else:
+            item['post_time'] = date
+        item['post_num'] = int(response.xpath('//span[@class="red"]/text()')[0].get())
+        item['page_num'] = int(response.xpath('//span[@class="red"]/text()')[1].get())
+        item['sub_name'] = response.xpath('//a[@class="card_title_fname"]/text()').extract_first().strip()[:-1]
+        yield item
 
         for p in response.xpath("//div[contains(@class, 'l_post')]"):
             if p.xpath(u".//span[contains(text(), '广告')]"):
@@ -74,32 +74,31 @@ class ThreadspiderSpider(scrapy.Spider):
             if date is None:
                 date = data['content']['date']
             floor = data['content']['post_no']
-
-
-
-
-
-
-
+            reply_num = data['content']['comment_num']
             c = p.xpath(".//div[contains(@class,'j_d_post_content')]").extract_first()
             content = self.content_parse(c)
-            print("等级: ", level)
-            print("内容: ", content)
-            if device:
-                print(device)
-            else:
-                print("网页客户端")
-            print("楼层: ", floor)
-            print("时间: ", date)
+            item = PostItem({
+                'post_id': int(post_id),
+                'author_id': uid,
+                'author_level': int(level),
+                'author_ip': ip,
+                'author_device': device,
+                'date': date,
+                'content': content,
+                'floor': int(floor),
+                'reply_num': int(reply_num),
+                'thread_id': int(thread_id)
+            })
+            yield item
 
 
             url = 'https://tieba.baidu.com/home/main/?id=' + uid
-            # yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': uid})
+            yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': uid})
 
-        # next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
-        # if next_page:
-        #     url = response.urljoin(next_page.extract_first())
-        #     yield scrapy.Request(url=url, callback=self.thread_parse)
+        next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
+        if next_page:
+            url = response.urljoin(next_page.extract_first())
+            yield scrapy.Request(url=url, callback=self.thread_parse)
 
         pass
 

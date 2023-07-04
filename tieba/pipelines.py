@@ -59,6 +59,7 @@ class TiebaPipeline:
         pass
 
     def insert_post(self, item):
+        print(item)
         pass
 
     def insert_reply(self, item):
