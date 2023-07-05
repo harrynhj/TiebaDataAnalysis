@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 import re
 import sqlite3
 from tieba import datatier
+from urllib.parse import urlparse
+import os
+import hashlib
 
 
 def user_parse(response):
@@ -50,7 +53,6 @@ def user_parse(response):
     yield item
 
 
-
 def content_parse(content):
     if not content or not content.strip():
         return None
@@ -83,25 +85,32 @@ def content_parse(content):
 
     return ''.join(l), img_urls
 
+
 def process_div(div):
     class_value = div.get('class')[0]
     if class_value == 'video_src_wrapper':
         return '[视频]'
-    elif class_value == 'post_bubble_middle':
-        return div.text
     elif class_value == 'voice_player':
         return '[语音]'
     else:
-        return ''
+        return div.text
+
 
 def process_image(img):
     class_value = img.get('class')[0]
     if class_value == 'BDE_Smiley':
         return process_emoji(img), ''
+    if class_value == 'j_voice_ad_gif':
+        return '', ''
+    if img.get('id'):
+        if img.get('id') == 'old_image_':
+            return '[无效图片]', ''
     return '[图片]', img.get('src')
+
 
 def process_str(str):
     return str.strip()
+
 
 def process_emoji(emoji):
     sql = 'SELECT * FROM Emoji'
@@ -116,4 +125,18 @@ def process_emoji(emoji):
             number = int(match.group(1) or match.group(2))
     if number == 0:
         return '[表情]'
-    return '[' + emoji_table[number-1][1] + ']'
+    return '[' + emoji_table[number - 1][1] + ']'
+
+
+def get_img_str(img_urls):
+    filenames = []
+    for url in img_urls:
+        filename = get_img_name(url)
+        filenames.append(filename)
+    result = '|'.join(filenames)
+    return result
+
+
+def get_img_name(img_url):
+    filename = hashlib.sha1(img_url.encode('utf-8')).hexdigest()
+    return filename

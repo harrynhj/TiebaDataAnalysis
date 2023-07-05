@@ -22,6 +22,8 @@ class TiebaPipeline:
         pass
 
     def process_item(self, item, spider):
+        if 'image_urls' in item:
+            return item
         if item.item_name == 'SubTieba':
             self.insert_subtieba(item)
         elif item.item_name == 'Thread':

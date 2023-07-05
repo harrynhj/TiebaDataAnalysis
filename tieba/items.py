@@ -39,6 +39,8 @@ class PostItem(scrapy.Item):
     content = scrapy.Field()
     floor = scrapy.Field()
     reply_num = scrapy.Field()
+    image_num = scrapy.Field()
+    images = scrapy.Field()
     thread_id = scrapy.Field()
 
 
@@ -70,10 +72,3 @@ class ProxyItem(scrapy.Item):
     type = scrapy.Field()
     username = scrapy.Field()
     password = scrapy.Field()
-
-
-class ImageItem(scrapy.Item):
-    item_name = 'Image'
-    url = scrapy.Field()
-    post_id = scrapy.Field()
-    path = scrapy.Field()

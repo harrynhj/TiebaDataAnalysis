@@ -2,7 +2,7 @@ import scrapy
 import json
 
 import tieba.datatier
-from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem, UserItem, ImageItem
+from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem, UserItem
 from urllib.parse import urlparse, parse_qs
 from . import helper
 from bs4 import BeautifulSoup
@@ -22,7 +22,6 @@ class ThreadspiderSpider(scrapy.Spider):
     def start_requests(self):
         self.url += self.tieba_name + '&pn='
         yield scrapy.Request(url=self.url+str(self.current_page), callback=self.parse)
-        # yield scrapy.Request(url='https://tieba.baidu.com/p/8414238582', callback=self.thread_parse)
 
     def parse(self, response):
         for t in response.xpath('//li[contains(@class, "j_thread_list")]'):
@@ -33,6 +32,8 @@ class ThreadspiderSpider(scrapy.Spider):
             item['thread_id'] = data['id']
             item['thread_title'] = t.xpath('.//div[contains(@class, "threadlist_title")]/a/@title').extract_first()
             item['author_id'] = data['author_portrait']
+            if not item['author_id']:
+                item['author_id'] = 'ip'
             item['is_good'] = data['is_good']
             yield scrapy.Request(url='https://tieba.baidu.com/p/' + str(data['id']) + '?pn=1',
                                  callback=self.thread_parse, meta={'item': item, 'thread_id': data['id']})
@@ -45,7 +46,7 @@ class ThreadspiderSpider(scrapy.Spider):
 
     def thread_parse(self, response):
         thread_id = response.meta['thread_id']
-        if response.meta['item']:
+        if 'item' in response.meta:
             thread_item = response.meta['item']
             thread_id = response.meta['item']['thread_id']
             first_floor = response.xpath('//div[contains(@class, "l_post ")]')
@@ -64,9 +65,12 @@ class ThreadspiderSpider(scrapy.Spider):
             if p.xpath(u".//span[contains(text(), '广告')]"):
                 continue
             data = json.loads(p.xpath("@data-field").extract_first())
-
             post_id = data['content']['post_id']
             uid = data['author']['portrait'].split('?t=', 1)[0]
+            if uid:
+                uid = uid.split('?t=', 1)[0]
+            else:
+                uid = data['author']['user_name']
             level = p.xpath('.//div[@class="d_badge_lv"]/text()').extract_first()
             ip = p.xpath('.//span[contains(text(),"IP属地")]/text()').extract_first()
             if ip:
@@ -79,7 +83,9 @@ class ThreadspiderSpider(scrapy.Spider):
             reply_num = data['content']['comment_num']
             c = p.xpath(".//div[contains(@class,'j_d_post_content')]").extract_first()
             content, img_urls = helper.content_parse(c)
-            # for url in img_urls:
+            image_str = helper.get_img_str(img_urls)
+            if img_urls:
+                yield {'image_urls': img_urls}
 
             item = PostItem({
                 'post_id': int(post_id),
@@ -91,17 +97,18 @@ class ThreadspiderSpider(scrapy.Spider):
                 'content': content,
                 'floor': int(floor),
                 'reply_num': int(reply_num),
+                'image_num': len(img_urls),
+                'images': image_str,
                 'thread_id': int(thread_id)
             })
             yield item
 
 
             url = 'https://tieba.baidu.com/home/main/?id=' + uid
-            yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': uid})
+            if data['content']['is_anonym'] == 'false':
+                yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': uid})
 
         next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
         if next_page:
             url = response.urljoin(next_page.extract_first())
             yield scrapy.Request(url=url, callback=self.thread_parse, meta={'thread_id': thread_id})
-
-        pass
