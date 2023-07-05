@@ -6,6 +6,7 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import os
 
 BOT_NAME = 'tieba'
 #USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/610.3.7 (KHTML, like Gecko) QHBrowser/314 QihooBrowser/4.0.9"
@@ -14,6 +15,11 @@ USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0）'
 
 SPIDER_MODULES = ['tieba.spiders']
 NEWSPIDER_MODULE = 'tieba.spiders'
+
+project_folder = os.path.abspath(os.path.dirname(__file__))
+
+IMAGES_STORE = os.path.join(project_folder, 'images')
+
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -71,6 +77,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
+   "scrapy.pipelines.images.ImagesPipeline": 200,
    "tieba.pipelines.TiebaPipeline": 300,
 }
 

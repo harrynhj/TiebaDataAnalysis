@@ -2,14 +2,15 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
+import scrapy
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem
 
 from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem
 import sqlite3
 from . import datatier
+from scrapy.pipelines.images import ImagesPipeline
 
 
 class TiebaPipeline:
@@ -31,9 +32,10 @@ class TiebaPipeline:
             self.insert_reply(item)
         elif item.item_name == 'Proxy':
             self.insert_proxy(item)
-
-        else:
+        elif item.item_name == 'User':
             self.insert_user(item)
+        else:
+            pass
         return item
 
     def insert_subtieba(self, item):

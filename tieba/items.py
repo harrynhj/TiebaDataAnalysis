@@ -70,3 +70,10 @@ class ProxyItem(scrapy.Item):
     type = scrapy.Field()
     username = scrapy.Field()
     password = scrapy.Field()
+
+
+class ImageItem(scrapy.Item):
+    item_name = 'Image'
+    url = scrapy.Field()
+    post_id = scrapy.Field()
+    path = scrapy.Field()

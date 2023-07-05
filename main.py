@@ -6,7 +6,7 @@ def main():
     dbConn = sqlite3.connect('tieba.db')
     process = CrawlerProcess(get_project_settings())
     #process.crawl('TiebaSpider', tieba_name='乌克兰', dbConn=dbConn)
-    process.crawl('ThreadSpider', tieba_name="乌克兰", dbConn=dbConn, end_page=50)
+    process.crawl('ThreadSpider', tieba_name="声控", dbConn=dbConn, end_page=50)
     #process.crawl('TestSpider', tieba_name="抗压背锅", dbConn=dbConn)
     #process.crawl('IpSpider', dbConn=dbConn)
     process.start()
