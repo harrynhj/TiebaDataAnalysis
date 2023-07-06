@@ -40,15 +40,17 @@ class PostItem(scrapy.Item):
     floor = scrapy.Field()
     reply_num = scrapy.Field()
     image_num = scrapy.Field()
-    images = scrapy.Field()
+    image_str = scrapy.Field()
     thread_id = scrapy.Field()
 
 
 class ReplyItem(scrapy.Item):
     item_name = 'Reply'
+    reply_id = scrapy.Field()
     author_id = scrapy.Field()
     content = scrapy.Field()
     time = scrapy.Field()
+    reply_to = scrapy.Field()
     post_id = scrapy.Field()
 
 

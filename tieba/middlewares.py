@@ -131,7 +131,7 @@ class RandomProxyMiddleware(object):
 
     def process_request(self, request, spider):
         if len(self.proxies_list) == 0:
-            pass
+            return
         proxy = random.choice(self.proxies_list)
         request.meta['proxy'] = proxy[2] + '://' + proxy[0] + ':' + proxy[1]
         if proxy[3]:

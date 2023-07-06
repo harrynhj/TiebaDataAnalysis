@@ -2,6 +2,8 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+
+
 import scrapy
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
@@ -9,6 +11,8 @@ from scrapy.exceptions import DropItem
 
 from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem
 import sqlite3
+import hashlib
+from scrapy.utils.python import to_bytes
 from . import datatier
 from scrapy.pipelines.images import ImagesPipeline
 
@@ -16,6 +20,7 @@ from scrapy.pipelines.images import ImagesPipeline
 class TiebaPipeline:
     def __init__(self):
         self.dbConn = None
+        self.cnt = 0
 
     def open_spider(self, spider):
         self.dbConn = spider.dbConn
@@ -24,6 +29,7 @@ class TiebaPipeline:
     def process_item(self, item, spider):
         if 'image_urls' in item:
             return item
+        self.cnt += 1
         if item.item_name == 'SubTieba':
             self.insert_subtieba(item)
         elif item.item_name == 'Thread':
@@ -38,6 +44,9 @@ class TiebaPipeline:
             self.insert_user(item)
         else:
             pass
+        if self.cnt == 10:
+            self.dbConn.commit()
+            self.cnt = 0
         return item
 
     def insert_subtieba(self, item):
@@ -63,11 +72,28 @@ class TiebaPipeline:
         pass
 
     def insert_post(self, item):
-        print(item)
-        pass
+        sql = 'INSERT OR REPLACE INTO Posts VALUES ((?),(?),(?),(?),(?),(?),(?),(?),(?),(?),(?),(?))'
+        datatier.perform_action(self.dbConn, sql, (item['post_id'],
+                                                   item['author_id'],
+                                                   item['author_level'],
+                                                   item['author_ip'],
+                                                   item['author_device'],
+                                                   item['date'],
+                                                   item['content'],
+                                                   item['floor'],
+                                                   item['reply_num'],
+                                                   item['image_num'],
+                                                   item['image_str'],
+                                                   item['thread_id']))
 
     def insert_reply(self, item):
-        pass
+        sql = 'INSERT INTO Replies VALUES ((?),(?),(?),(?),(?),(?))'
+        datatier.perform_action(self.dbConn, sql, (item['reply_id'],
+                                                   item['author_id'],
+                                                   item['content'],
+                                                   item['time'],
+                                                   item['reply_to'],
+                                                   item['post_id']))
 
     def insert_user(self, item):
         sql = 'INSERT OR REPLACE INTO Users VALUES((?),(?),(?),(?),(?),(?),(?),(?),(?));'
@@ -81,9 +107,7 @@ class TiebaPipeline:
                                                    item['following_num'],
                                                    item['gift_num']))
 
-        pass
-
-    def insert_proxy(self,item):
+    def insert_proxy(self, item):
         sql = 'INSERT OR REPLACE INTO Proxies VALUES((?),(?),(?),(?),(?));'
         datatier.perform_action(self.dbConn, sql, (item['ip'],
                                                    item['port'],

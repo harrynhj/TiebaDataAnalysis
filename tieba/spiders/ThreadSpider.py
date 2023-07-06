@@ -1,3 +1,5 @@
+from math import ceil
+
 import scrapy
 import json
 
@@ -5,23 +7,24 @@ import tieba.datatier
 from tieba.items import SubTiebaItem, ThreadItem, PostItem, ReplyItem, UserItem
 from urllib.parse import urlparse, parse_qs
 from . import helper
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 import re
 import sqlite3
+from lxml import html
 
 
 class ThreadspiderSpider(scrapy.Spider):
     name = 'ThreadSpider'
     tieba_name = ''
-    current_page = 0
     start_page = 0
+    current_page = 0 + start_page
     end_page = 1000000
     url = 'https://tieba.baidu.com/f?kw='
     emoji_table = []
 
     def start_requests(self):
         self.url += self.tieba_name + '&pn='
-        yield scrapy.Request(url=self.url+str(self.current_page), callback=self.parse)
+        yield scrapy.Request(url=self.url + str(self.current_page), callback=self.parse)
 
     def parse(self, response):
         for t in response.xpath('//li[contains(@class, "j_thread_list")]'):
@@ -58,57 +61,71 @@ class ThreadspiderSpider(scrapy.Spider):
                 thread_item['post_time'] = date
             thread_item['post_num'] = int(response.xpath('//span[@class="red"]/text()')[0].get())
             thread_item['page_num'] = int(response.xpath('//span[@class="red"]/text()')[1].get())
-            thread_item['sub_name'] = response.xpath('//a[@class="card_title_fname"]/text()').extract_first().strip()[:-1]
+            thread_item['sub_name'] = self.tieba_name
             yield thread_item
 
         for p in response.xpath("//div[contains(@class, 'l_post')]"):
-            if p.xpath(u".//span[contains(text(), '广告')]"):
-                continue
-            data = json.loads(p.xpath("@data-field").extract_first())
-            post_id = data['content']['post_id']
-            uid = data['author']['portrait'].split('?t=', 1)[0]
-            if uid:
-                uid = uid.split('?t=', 1)[0]
+            if helper.get_post_info(p, thread_id):
+                p_item, img_urls, is_anonym = helper.get_post_info(p, thread_id)
             else:
-                uid = data['author']['user_name']
-            level = p.xpath('.//div[@class="d_badge_lv"]/text()').extract_first()
-            ip = p.xpath('.//span[contains(text(),"IP属地")]/text()').extract_first()
-            if ip:
-                ip = ip[5:]
-            device = p.xpath('.//span[@class="tail-info"]/a/text()').extract_first()
-            date = p.xpath('.//span[@class="tail-info"][last()]/text()').extract_first()
-            if date is None:
-                date = data['content']['date']
-            floor = data['content']['post_no']
-            reply_num = data['content']['comment_num']
-            c = p.xpath(".//div[contains(@class,'j_d_post_content')]").extract_first()
-            content, img_urls = helper.content_parse(c)
-            image_str = helper.get_img_str(img_urls)
+                continue
             if img_urls:
-                yield {'image_urls': img_urls}
+                yield {'image_urls': img_urls, 'tieba_name': self.tieba_name}
+            yield p_item
 
-            item = PostItem({
-                'post_id': int(post_id),
-                'author_id': uid,
-                'author_level': int(level),
-                'author_ip': ip,
-                'author_device': device,
-                'date': date,
-                'content': content,
-                'floor': int(floor),
-                'reply_num': int(reply_num),
-                'image_num': len(img_urls),
-                'images': image_str,
-                'thread_id': int(thread_id)
-            })
-            yield item
+            if p_item['reply_num'] != 0:
+                pages = ceil(p_item['reply_num'] / 10.0)
+                for i in range(1, pages):
+                    url = "https://tieba.baidu.com/p/comment?tid=%d&pid=%d&pn=%d" \
+                          % (thread_id, p_item['post_id'], i)
+                    yield scrapy.Request(url, callback=self.reply_parse, meta={'post_id': p_item['post_id']})
 
-
-            url = 'https://tieba.baidu.com/home/main/?id=' + uid
-            if data['content']['is_anonym'] == 'false':
-                yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': uid})
+            url = 'https://tieba.baidu.com/home/main/?id=' + p_item['author_id']
+            if not is_anonym:
+                yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': p_item['author_id']})
 
         next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
         if next_page:
             url = response.urljoin(next_page.extract_first())
             yield scrapy.Request(url=url, callback=self.thread_parse, meta={'thread_id': thread_id})
+
+    def reply_parse(self, response):
+        reply_list = response.xpath('body/li')[:-1]
+        for r in reply_list:
+            data = json.loads(r.attrib['data-field'])
+            reply_id = data['spid']
+            author_id = data['portrait']
+            c = r.xpath('.//span[@class = "lzl_content_main"]').extract_first()
+            content = self.reply_content(c)
+            reply_to = self.extract_portrait(c)
+            time = r.css('.lzl_time').xpath('./text()').get()
+            post_id = response.meta['post_id']
+            item = ReplyItem({'reply_id': reply_id,
+                              'author_id': author_id,
+                              'content': content,
+                              'time': time,
+                              'reply_to': reply_to,
+                              'post_id': post_id})
+            yield item
+
+
+    def reply_content(self, reply):
+        soup = BeautifulSoup(reply, 'html.parser')
+        result = ''
+
+        def traverse(node):
+            nonlocal result
+            if isinstance(node, NavigableString):
+                result += node
+            elif node.name == 'img':
+                result += helper.process_emoji(node)
+            else:
+                for child in node.children:
+                    traverse(child)
+        traverse(soup)
+        return result.strip()
+
+    def extract_portrait(self, reply):
+        tree = html.fromstring(reply)
+        portrait = tree.xpath('.//a[@class="at"]/@portrait')
+        return portrait[0] if portrait else None

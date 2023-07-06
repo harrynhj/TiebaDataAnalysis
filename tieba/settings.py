@@ -16,7 +16,7 @@ USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0）'
 SPIDER_MODULES = ['tieba.spiders']
 NEWSPIDER_MODULE = 'tieba.spiders'
 
-project_folder = os.path.abspath(os.path.dirname(__file__))
+project_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 IMAGES_STORE = os.path.join(project_folder, 'images')
 
@@ -26,7 +26,7 @@ IMAGES_STORE = os.path.join(project_folder, 'images')
 #USER_AGENT = "tieba (+http://www.yourdomain.com)"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -108,5 +108,7 @@ TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'
 FEED_EXPORT_ENCODING = 'utf-8'
 LOG_LEVEL = 'INFO'
 
-DOWNLOAD_DELAY = 2
+DOWNLOAD_DELAY = 1
+DOWNLOAD_FAIL_ON_DATALOSS = False
 # DUPEFILTER_CLASS = 'tieba.middlewares.NoFilter'
+TELNETCONSOLE_PORT = [6023, 6500]
