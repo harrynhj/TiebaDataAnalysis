@@ -129,13 +129,20 @@ class RandomProxyMiddleware(object):
         self.proxies_list = datatier.select_n_rows(self.dbConn, sql)
         self.dbConn.close()
 
+    # def process_request(self, request, spider):
+    #     if len(self.proxies_list) == 0:
+    #         return
+    #     proxy = random.choice(self.proxies_list)
+    #     request.meta['proxy'] = proxy[2] + '://' + proxy[0] + ':' + proxy[1]
+    #     # if proxy[3]:
+    #     #     request.headers['Proxy-Authorization'] = basic_auth_header(proxy[3], proxy[4])
+
+
+
     def process_request(self, request, spider):
-        if len(self.proxies_list) == 0:
-            return
-        proxy = random.choice(self.proxies_list)
-        request.meta['proxy'] = proxy[2] + '://' + proxy[0] + ':' + proxy[1]
-        if proxy[3]:
-            request.headers['Proxy-Authorization'] = basic_auth_header(proxy[3], proxy[4])
+        request.meta['proxy'] = 'http' + '://' + 'p.webshare.io' + ':' + '9999'
+
+
 
 
 class NoFilter(BaseDupeFilter):

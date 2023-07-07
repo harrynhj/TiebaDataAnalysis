@@ -21,6 +21,7 @@ class ThreadspiderSpider(scrapy.Spider):
     end_page = 1000000
     url = 'https://tieba.baidu.com/f?kw='
     emoji_table = []
+    visited = set()
 
     def start_requests(self):
         self.url += self.tieba_name + '&pn='
@@ -33,6 +34,8 @@ class ThreadspiderSpider(scrapy.Spider):
                 continue
             item = ThreadItem()
             item['thread_id'] = data['id']
+            if data['id'] in self.visited:
+                continue
             item['thread_title'] = t.xpath('.//div[contains(@class, "threadlist_title")]/a/@title').extract_first()
             item['author_id'] = data['author_portrait']
             if not item['author_id']:
@@ -82,7 +85,9 @@ class ThreadspiderSpider(scrapy.Spider):
 
             url = 'https://tieba.baidu.com/home/main/?id=' + p_item['author_id']
             if not is_anonym:
-                yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': p_item['author_id']})
+                if p_item['author_id'] not in self.visited:
+                    self.visited.add(p_item['author_id'])
+                    yield scrapy.Request(url=url, callback=helper.user_parse, meta={'id': p_item['author_id']})
 
         next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
         if next_page:

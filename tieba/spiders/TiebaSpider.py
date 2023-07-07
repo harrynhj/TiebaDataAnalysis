@@ -50,7 +50,7 @@ class TiebaSpider(scrapy.Spider):
                 yield scrapy.Request(url=self.tieba_url + mod_url, callback=helper.user_parse, meta={'id': mod_id})
 
         item = SubTiebaItem({
-            'sub_name': sub_name[:-1],
+            'sub_name': sub_name,
             'sub_title': sub_title,
             'follower_num': follower_num,
             'thread_num': thread_num,

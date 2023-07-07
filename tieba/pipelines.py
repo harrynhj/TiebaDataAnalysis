@@ -87,7 +87,7 @@ class TiebaPipeline:
                                                    item['thread_id']))
 
     def insert_reply(self, item):
-        sql = 'INSERT INTO Replies VALUES ((?),(?),(?),(?),(?),(?))'
+        sql = 'INSERT OR REPLACE INTO Replies VALUES ((?),(?),(?),(?),(?),(?))'
         datatier.perform_action(self.dbConn, sql, (item['reply_id'],
                                                    item['author_id'],
                                                    item['content'],
@@ -114,4 +114,3 @@ class TiebaPipeline:
                                                    item['type'],
                                                    item['username'],
                                                    item['password'],))
-        self.dbConn.commit()

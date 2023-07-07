@@ -16,7 +16,11 @@ def user_parse(response):
     gender = 'm'
     follower_num = 0
     following_num = 0
-    name = response.xpath('//span[contains(@class, "userinfo_username")]/text()').extract_first().strip()
+    name = response.xpath('//span[contains(@class, "userinfo_username")]/text()').extract_first()
+    if name:
+        name = name.strip()
+    else:
+        name = 'emoji名字'
     is_male = response.xpath('//span[@class="userinfo_sex userinfo_sex_male"]').extract_first()
     age = response.xpath('//span[contains(text(),"吧龄")]/text()').extract_first().strip()
     if (char.isdigit() for char in age):
